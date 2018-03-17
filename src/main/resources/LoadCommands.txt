@@ -1,0 +1,33 @@
+
+Samples
+
+awk -F"," 'BEGIN { OFS = "," } {$15=$1; print}' US_EQ_Price_History_wide.csv  > US_EQ_Price_History_wide-2.csv
+
+java -jar ..\cassandra-loader -host 23.20.121.214 -user iccassandra -pw a832a593f4bd5098d30e77776c668c77 -schema vg_test.security_factors_wide(Security_Id,Business_Date,org_open,org_high,org_low,org_close,org_volume,ex_dividend,split_ratio,adj_open,adj_high,adj_low,adj_close,adj_volume,security_id_sort) -skipRows 1 -f C:\Vaibhav\CassandraPoC\SampleData\US_EQ_Price_History_wide-2.csv
+
+awk -F"," 'BEGIN { OFS = "," } {$9=$1; print}' SnP500_Price_History_wide.csv > SnP500_Price_History_wide-2.csv
+
+java -jar ..\cassandra-loader -host 23.20.121.214 -user iccassandra -pw a832a593f4bd5098d30e77776c668c77 -schema vg_test.security_factors_wide(Security_Id,Business_Date,org_open,org_high,org_low,org_close,adj_close,org_volume,security_id_sort) -skipRows 1 -f C:\Vaibhav\CassandraPoC\SampleData\SnP500_Price_History_wide-2.csv
+
+
+-m generate -t factors -d file -y 2 -u 100 -f 10  -s 200801 -l wide
+
+java -jar ..\cassandra-loader -host 23.20.121.214 -user iccassandra -pw a832a593f4bd5098d30e77776c668c77 -schema vg_test.security_factors_wide(Business_Date,Security_Id,Factor1,Factor2,Factor3,Factor4,Factor5,Factor6,Factor7,Factor8,Factor9,Factor10,security_id_sort) -skipRows 1 -f C:\Vaibhav\CassandraPoC\SampleData\factors-2008-01-01-wide.csv -skipCols 1,2
+
+
+java -jar ..\cassandra-loader -host 23.20.121.214 -user iccassandra -pw a832a593f4bd5098d30e77776c668c77 -schema vg_test.security_factors_long(Security_Id,Business_Date,Factor_Name,Factor_Value) -skipRows 1  -f C:\Vaibhav\CassandraPoC\SampleData\US_EQ_Price_History_long.csv
+
+
+java -jar ..\cassandra-loader -host 23.20.121.214 -user iccassandra -pw a832a593f4bd5098d30e77776c668c77 -schema vg_test.security_factors_long(Security_Id,Business_Date,Factor_Name,Factor_Value) -skipRows 1  -f C:\Vaibhav\CassandraPoC\SampleData\SnP500_Price_History_long.csv
+
+
+-m generate -t factors -d file -y 2 -u 100 -f 10  -s 200801 -l long
+
+java -jar ..\cassandra-loader -host 23.20.121.214 -user iccassandra -pw a832a593f4bd5098d30e77776c668c77 -schema vg_test.security_factors_long(Business_Date,Security_Id,Factor_Name,Factor_Value) -skipRows 1  -f C:\Vaibhav\CassandraPoC\SampleData\factors-2008-01-01-long.csv -skipCols 1,2
+
+
+
+-m  generate  -t  positions  -d  file  -y  5  -u  100  -h  50  -p  1   -s  200801 
+
+java -jar ..\cassandra-loader -host 23.20.121.214 -user iccassandra -pw a832a593f4bd5098d30e77776c668c77 -schema vg_test.portfolio_positions(Business_Date,Portfolio_Id,Security_Id,Weight) -skipRows 1 -f C:\Vaibhav\CassandraPoC\SampleData\positions-2008-01-01.csv -skipCols 1,2
+
