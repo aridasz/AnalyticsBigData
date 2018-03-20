@@ -20,8 +20,8 @@ public class DataCSVFormatter2 {
 
 	public static void main(String[] args) throws Exception {
 		// TODO Auto-generated method stub
-		//convert("C:\\projects\\WIKI_PRICES_Sec\\WIKI_PRICES_Sec_Full.csv");
-		convert2("/home/ec2-user/notebooks/SP3000_constituents.csv");
+		convert("C:\\projects\\WIKI_PRICES_Sec\\WIKI_PRICES_Sec_Full.csv");
+		//convert2("/home/ec2-user/notebooks/SP3000_constituents.csv");
 
 	}
 
@@ -31,7 +31,7 @@ public class DataCSVFormatter2 {
 		Set<String> secIds = new HashSet<String>();
 		
 		try (Stream<String> lines = Files.lines(Paths.get(filename), Charset.defaultCharset())) {
-			try (BufferedWriter writer = Files.newBufferedWriter(Paths.get("C:\\\\projects\\\\WIKI_PRICES_Sec\\\\WIKI_PRICES_sec_1.csv")))
+			try (BufferedWriter writer = Files.newBufferedWriter(Paths.get("C:\\\\projects\\\\WIKI_PRICES_Sec\\\\WIKI_PRICES_sec_by_year.csv")))
 			{
 				lines.forEachOrdered(line -> {
 					try {
@@ -45,8 +45,8 @@ public class DataCSVFormatter2 {
 								//writer.write(vals[0] + "," + vals[1] + "," + fact[i] + "," + vals[i] + "\n");
 							}
 						}
-						/*String[] vals = line.split(",");
-						writer.write(vals[0] + "," + line + "\n");*/
+						String[] vals = line.split(",");
+						writer.write(vals[1].split("-")[0] + "," + line + "\n");
 						
 					} catch (Exception e) {
 						e.printStackTrace();
@@ -54,7 +54,7 @@ public class DataCSVFormatter2 {
 				});
 			}
 		}
-		System.out.println(secIds);
+		//System.out.println(secIds);
 	}
 	
 	public static void convert2(String filename) throws IOException {

@@ -116,5 +116,29 @@ public class CassandraStore implements IDataStore{
 		return null;
 	}
 
+	@Override
+	public void lookupPortfolio(String portfolioId, String startDate, String endDate) throws Exception {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void close() {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void saveFactors(int batchSize, Table dataTab) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void connect() {
+		// TODO Auto-generated method stub
+		
+	}
+
 
 }

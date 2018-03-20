@@ -2,7 +2,8 @@ package org.am.cdo;
 
 import java.util.HashMap;
 
-import org.am.cdo.data.store.CassandraStoreAWS;
+import org.am.cdo.data.store.DataStoreFactory;
+import org.am.cdo.data.store.IDataStore;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
@@ -14,8 +15,9 @@ import tech.tablesaw.api.Table;
 @SpringBootApplication
 public class AnalyticsApp implements CommandLineRunner {
 	
+	
 	@Autowired
-	CassandraStoreAWS cassandraStore;
+	DataStoreFactory dataStoreFactory;
 
 	public static void main(String[] args) {
 		SpringApplication.run(AnalyticsApp.class, args);
@@ -29,6 +31,7 @@ public class AnalyticsApp implements CommandLineRunner {
 			parameters.put(args[i], args[i+1]);
 		}
 		System.out.println(parameters);
+		String storeType = parameters.get("-run");
         String portfolioId = parameters.get("-portfolioId");
 		String[] secIds = parameters.get("-securities") != null ? parameters.get("-securities").split(",") : null;
 		String[] factors = parameters.get("-factors") != null ? parameters.get("-factors").split(",") : null;
@@ -36,26 +39,27 @@ public class AnalyticsApp implements CommandLineRunner {
 		String endDate = parameters.get("-end");
 		int batchSize = parameters.get("-batchsize") != null ? Integer.parseInt(parameters.get("-batchsize")) : 500;
 		              
-		cassandraStore.connect();		
+		IDataStore dataStore = dataStoreFactory.getDataStore(storeType);
+		
+		dataStore.connect();		
 		
 		try {
-						
 			if(secIds != null && secIds.length > 0 && factors != null && factors.length > 0) {
 				System.out.println("Getting Factors Calc and Calc daily return....");
-				Table dataTab = cassandraStore.getFactors(secIds, factors, startDate, endDate);
-				cassandraStore.saveFactors(batchSize, dataTab);
+				Table dataTab = dataStore.getFactors(secIds, factors, startDate, endDate);
+				dataStore.saveFactors(batchSize, dataTab);
 			}
 			
 			//"SP500", "1999-01-01", "2018-01-01"
 			if(StringUtils.isNotBlank(portfolioId)) {
 				System.out.println("Getting portfolio daily return for : " + portfolioId);
-				cassandraStore.lookupPortfolio(portfolioId, startDate, endDate);
+				dataStore.lookupPortfolio(portfolioId, startDate, endDate);
 			}
 			
 		} catch (Exception e) {
 			e.printStackTrace();
 		} finally {
-			cassandraStore.close();
+			dataStore.close();
 		}
 	}
 }

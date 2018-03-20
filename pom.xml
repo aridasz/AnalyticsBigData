@@ -46,6 +46,11 @@
 			<version>3.4.0</version>
 		</dependency>
 		<dependency>
+			<groupId>com.datastax.cassandra</groupId>
+			<artifactId>cassandra-driver-extras</artifactId>
+			<version>3.3.2</version>
+		</dependency>
+		<dependency>
 			<groupId>tech.tablesaw</groupId>
 			<artifactId>tablesaw-core</artifactId>
 			<version>0.11.6</version>

@@ -18,4 +18,8 @@ public interface IDataStore {
 	
 	public void setLayout(String layout);
 	public Table getFactors(String[] securityIds, String[] factors, String startDate, String endDate) throws Exception;
+	public void lookupPortfolio(String portfolioId, String startDate, String endDate) throws Exception;
+	public void close();
+	public void saveFactors(int batchSize, Table dataTab) throws Exception;
+	public void connect();
 }
