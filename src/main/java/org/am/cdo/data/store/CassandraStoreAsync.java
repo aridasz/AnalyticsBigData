@@ -72,7 +72,7 @@ public class CassandraStoreAsync implements IDataStore {
 	    return futures;
 	}
 	
-	private static Table extractResults(List<ResultSetFuture> futures, String factors[]) {
+	private Table extractResults(List<ResultSetFuture> futures, String factors[]) {
 		Column[] columns = new Column[factors.length + 2];
 		columns[0] = new CategoryColumn("security_id");
 		columns[1] = new DateColumn("business_date");
@@ -85,7 +85,7 @@ public class CassandraStoreAsync implements IDataStore {
 
 		for (ResultSetFuture future : futures) {
 			try {
-				ResultSet rs = future.getUninterruptibly();
+				ResultSet rs = future.getUninterruptibly(asyncTimeout, TimeUnit.MILLISECONDS);
 				AnalyticsUtil.readResultSetToTable(table1, rs);
 			} catch (Exception e) {
 				e.printStackTrace();

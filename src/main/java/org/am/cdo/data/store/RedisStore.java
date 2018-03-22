@@ -1,28 +1,59 @@
 package org.am.cdo.data.store;
+import java.time.Duration;
 import java.time.LocalDate;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.stream.Collectors;
 
 import org.am.cdo.util.Utils;
 
+import redis.clients.jedis.HostAndPort;
 import redis.clients.jedis.Jedis;
+import redis.clients.jedis.JedisCluster;
+import redis.clients.jedis.JedisPoolConfig;
 import redis.clients.jedis.Pipeline;
 import redis.clients.jedis.Response;
 import tech.tablesaw.api.Table;
 
 public class RedisStore implements IDataStore{
 
+	private DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+	
 	private Jedis jedis;
 	private Pipeline pipeline;
-	public RedisStore() {
+	private JedisCluster jedisCluster;
+	
+	
+	private JedisPoolConfig buildPoolConfig() {
+	    final JedisPoolConfig poolConfig = new JedisPoolConfig();
+	    poolConfig.setMaxTotal(128);
+	    poolConfig.setMaxIdle(128);
+	    poolConfig.setMinIdle(16);
+	    poolConfig.setTestOnBorrow(true);
+	    poolConfig.setTestOnReturn(true);
+	    poolConfig.setTestWhileIdle(true);
+	    poolConfig.setMinEvictableIdleTimeMillis(Duration.ofSeconds(60).toMillis());
+	    poolConfig.setTimeBetweenEvictionRunsMillis(Duration.ofSeconds(30).toMillis());
+	    poolConfig.setNumTestsPerEvictionRun(3);
+	    poolConfig.setBlockWhenExhausted(true);
+	    return poolConfig;
+	}
+	
+	/*public RedisStore() {
       	jedis = new Jedis("localhost", 6379); 
       	System.out.println("Connection to server sucessfully"); 
       	//check whether server is running or not 
-      System.out.println("Server is running: "+jedis.ping()); 
-	}
-/*	@Override
+       System.out.println("Server is running: "+jedis.ping()); 
+	}*/
+	
+    /*@Override
 	public void saveFactor(String securityId, LocalDate businessDate, String factorName, float factorValue) {
 		String key = "date:"+(businessDate.getYear()*10000+businessDate.getMonthValue()*100+businessDate.getDayOfMonth())
 				+",security:"+securityId;
@@ -30,14 +61,24 @@ public class RedisStore implements IDataStore{
 		jedis.hset(key, factorName, ""+factorValue);				
 	}*/
 	
-	public void saveFactor(String securityId, LocalDate businessDate, Map<String,String> factors){
+	public void saveFactor(String securityId, LocalDate businessDate, Map<String,String> factors) {
 		String key = "date:"+(businessDate.getYear()*10000+businessDate.getMonthValue()*100+businessDate.getDayOfMonth())
 				+",security:"+securityId;
 		//System.out.println("key="+key);
 		pipeline.hmset(key, factors);				
-		//jedis.hmset(key, factors);				
+		//jedis.hmset(key, factors);	
 	}
 
+	public void saveFactor(String securityId, String businessDate, Map<String,String> factorsData) {
+		startBatch();
+		
+		double score = ZonedDateTime.parse(businessDate, dateFormatter).toInstant().toEpochMilli();
+		for (Entry<String, String> factor : factorsData.entrySet()) {
+			pipeline.zadd("security_factor:" + securityId + "_" + factor.getKey(), score, factor.getValue());
+		}
+		
+		endBatch();
+	}
 
 	@Override
 	public void savePosition(String portfolioId, LocalDate businessDate, String securityId, double weight) {
@@ -87,8 +128,32 @@ public class RedisStore implements IDataStore{
 
 	@Override
 	public Table getFactors(String[] securityIds, String[] factors, String startDate, String endDate) throws Exception {
-		// TODO Auto-generated method stub
-		return null;
+		
+		startBatch();
+		
+		for (String secId : securityIds) {
+			for (String factor : factors) {
+				pipeline.zrange("security_factor:" + secId + "_" + factor, 
+						ZonedDateTime.parse(startDate, dateFormatter).toInstant().toEpochMilli(), 
+						ZonedDateTime.parse(endDate, dateFormatter).toInstant().toEpochMilli())
+				.get();
+			}
+		}
+		
+		
+		String factorNames = Arrays.stream(factors).collect(Collectors.joining(","));
+		long t1 = System.currentTimeMillis();
+		
+		String query = "select security_id, business_date, " + factorNames + " from amcdopoc.security_factors "
+				+ " where security_id = ? and business_date >= '" + startDate + "' and business_date <= '" + endDate + "'";
+		
+		Table table = extractResults(sendQueries(session, session.prepare(query), securityIds), factors);
+		
+		long t2 = System.currentTimeMillis();
+		System.out.println("--- all done ---- count: " + table.rowCount() + " in sec: " + (t2-t1)/1000.0);
+		System.out.println(table.selectWhere(table.categoryColumn("security_id").isEqualTo("MSFT")).print());
+		
+		return table;
 	}
 
 	@Override
@@ -99,20 +164,19 @@ public class RedisStore implements IDataStore{
 
 	@Override
 	public void close() {
-		// TODO Auto-generated method stub
-		
+		jedis.close();
 	}
 
 	@Override
 	public void saveFactors(int batchSize, Table dataTab) throws Exception {
-		// TODO Auto-generated method stub
 		
 	}
 
 	@Override
 	public void connect() {
-		// TODO Auto-generated method stub
-		
+		this.jedisCluster = new JedisCluster(new HostAndPort("localhost", 6379), buildPoolConfig());
+		this.jedis = new Jedis("localhost", 6379); 
+      	System.out.println("Server is running: " + jedis.ping());
 	}
 
 }
